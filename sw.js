@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 Marina Bay's Cafe. All rights reserved. */
-var CACHE = 'mbc-v15';
+var CACHE = 'mbc-v17';
 var FILES = [
   './',
   './index.html',
@@ -13,6 +13,7 @@ var FILES = [
   './inventory-default.js',
   './app.css',
   './wide.css',
+  './brand.css',
   './shift.html',
   './calendar.html',
   './data.html',

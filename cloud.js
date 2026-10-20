@@ -354,7 +354,7 @@
     if (document.getElementById('mb-cloud-bar') || !document.body) return;
     var b = document.createElement('div');
     b.id = 'mb-cloud-bar';
-    b.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:9998;background:#17435a;color:#fff;font:14px system-ui,sans-serif;padding:10px 16px;display:flex;gap:12px;align-items:center;justify-content:center';
+    b.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:9998;background:#0d3a4e;color:#fff;font:14px system-ui,sans-serif;padding:10px 16px;display:flex;gap:12px;align-items:center;justify-content:center';
     b.innerHTML = '<span>Updated on another phone.</span><button style="border:1.5px solid #fff;background:none;color:#fff;border-radius:6px;font:inherit;padding:4px 12px;cursor:pointer">Refresh</button>';
     b.querySelector('button').onclick = function () {
       NAMES.forEach(function (n) {

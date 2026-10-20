@@ -1,6 +1,6 @@
 /* Copyright (c) 2026 Marina Bay's Cafe. All rights reserved. */
 /* Shared look for Marina Bay's Cafe apps (point of sale, menu, recipes). */
-:root { --ink: #1f1a17; --muted: #7a7068; --line: #e4dfd7; --soft: #f5f2ec; --teal: #17435a; --brown: #9b7952; --spend: #7d5f3c; --bad: #a4372b; }
+:root { --ink: #1f1a17; --muted: #7a7068; --line: #e4dfd7; --soft: #f5f2ec; --teal: #0d3a4e; --brown: #9b7952; --spend: #7d5f3c; --bad: #a4372b; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; height: 100%; }
 body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: var(--ink); background: var(--soft); font-size: 16px; line-height: 1.35; }
