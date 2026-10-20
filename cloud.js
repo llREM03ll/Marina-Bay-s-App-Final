@@ -178,6 +178,7 @@
       return Promise.all([import(FB_BASE + 'firebase-app.js'), import(FB_BASE + 'firebase-auth.js'), import(FB_BASE + 'firebase-firestore.js')]).then(function (m) {
         var app = m[0].initializeApp(cfg);
         FB = { au: m[1], fs: m[2], auth: m[1].getAuth(app), db: m[2].getFirestore(app) };
+        try { m[1].getRedirectResult(FB.auth).catch(function () {}); } catch (e) {}
         return FB;
       });
     }
@@ -185,6 +186,19 @@
       init: function () { return load(); },
       onAuth: function (cb) { FB.au.onAuthStateChanged(FB.auth, function (u) { cb(u ? { email: u.email, uid: u.uid } : null); }); },
       signIn: function (email, pw) { return FB.au.signInWithEmailAndPassword(FB.auth, email, pw); },
+      // Google sign-in: a popup first, and a full-page redirect when the popup cannot open (some phones and installed apps)
+      signInGoogle: async function () {
+        var provider = new FB.au.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+        try { return await FB.au.signInWithPopup(FB.auth, provider); }
+        catch (e) {
+          if (e && /popup-blocked|operation-not-supported-in-this-environment|web-storage-unsupported/.test(e.code || '')) {
+            try { origSet.call(LS, ON_KEY, '1'); } catch (x) {}
+            return FB.au.signInWithRedirect(FB.auth, provider);
+          }
+          throw e;
+        }
+      },
       signOut: function () { return FB.au.signOut(FB.auth); },
       setMany: function (coll, docs) {
         var F = FB.fs, chunks = [], i;
@@ -366,6 +380,12 @@
       await start();
       if (!started) throw new Error(st.msg || 'Could not reach Firebase');
       await backend.signIn(String(email).trim(), pw);
+      try { origSet.call(LS, ON_KEY, '1'); } catch (e) {}
+    },
+    signInGoogle: async function () {
+      await start();
+      if (!started) throw new Error(st.msg || 'Could not reach Firebase');
+      await backend.signInGoogle();
       try { origSet.call(LS, ON_KEY, '1'); } catch (e) {}
     },
     signOut: async function () {
