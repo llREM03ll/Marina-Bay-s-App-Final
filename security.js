@@ -51,7 +51,7 @@
   var st = document.createElement('style');
   st.textContent =
     'html.mb-locked body > :not(#mb-lock){visibility:hidden}' +
-    '#mb-lock{position:fixed;inset:0;z-index:99999;background:#0d3a4e;color:#fff;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;padding:20px;overflow:auto}' +
+    '#mb-lock{position:fixed;inset:0;z-index:99999;background:linear-gradient(rgba(6,30,42,.6),rgba(6,30,42,.75)),url(icons/sea.jpg) center/cover no-repeat,#0d3a4e;color:#fff;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;padding:20px;overflow:auto}' +
     '#mb-lock .mb-box{width:100%;max-width:320px;text-align:center}' +
     '#mb-lock img{width:64px;height:64px;padding:4px;background:#fff;border-radius:50%;box-shadow:0 0 0 2px #b08a57}' +
     '#mb-lock h1{font-family:"Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;font-size:24px;margin:12px 0 2px;font-weight:700}' +

@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 Marina Bay's Cafe. All rights reserved. */
-var CACHE = 'mbc-v17';
+var CACHE = 'mbc-v19';
 var FILES = [
   './',
   './index.html',
@@ -28,6 +28,7 @@ var FILES = [
   './security.html',
   './receipt-logo.js',
   './icons/receipt-logo.png',
+  './icons/sea.jpg',
   './manifest-money-counter.webmanifest',
   './manifest-expenses.webmanifest',
   './icons/favicon-32.png',

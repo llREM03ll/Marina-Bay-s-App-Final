@@ -6,8 +6,8 @@
   --tide: #2a7f94;
   --brass: #b08a57;
   --ink: #14262e;
-  --muted: #64757d;
-  --line: #e0e6e3;
+  --muted: #52646c;
+  --line: #d3dcd9;
   --soft: #f1f4f2;
   --teal: #0d3a4e;
   --brown: #b08a57;
@@ -68,13 +68,13 @@ h2.sec { font-family: var(--serif); font-size: 20px; color: var(--harbor); text-
 
 /* ---- home ---- */
 .shiftcard { border-radius: 14px; }
-.shiftcard.open { background: #e7f0f2; border-color: #c4dce2; }
+.shiftcard.open { background: #e7f0f2; border-color: #a9c9d2; }
 .open .dot { background: #2f8f62; box-shadow: 0 0 0 4px rgba(47, 143, 98, .18); }
-.st { border-radius: 14px; border-color: var(--line); background: var(--soft); }
+.st { border-radius: 14px; border-color: #c3cfcc; background: var(--soft); }
 .st.good { background: var(--harbor); border-color: var(--harbor); }
 .st.good small { color: #a9c8d2; }
 .st.good b { color: #fff; }
-.tile { border-radius: 14px; border-color: var(--line); }
+.tile { border-radius: 14px; border-color: #c3cfcc; }
 .tile svg { width: 42px; height: 42px; padding: 10px; border-radius: 12px; background: #e7f0f2; stroke: var(--harbor); margin-bottom: 4px; }
 .tile b { font-family: var(--serif); font-size: 17px; color: var(--harbor); }
 .links svg { stroke: var(--tide); }
@@ -99,9 +99,9 @@ body.pg-pos .pos-right { background: #fbfcfb; }
   body.pg-home .top b { font-size: 22px; }
 }
 @media (min-width: 768px) {
-  body.pg-pos #items .prow, body.pg-pos #items .prow:last-child { border-radius: 12px; border-color: var(--line); background: #fff; }
+  body.pg-pos #items .prow, body.pg-pos #items .prow:last-child { border-radius: 12px; border-color: #c3cfcc; background: #fff; }
   body.pg-pos #items .prow:active { border-color: var(--harbor); background: #e8f0f1; }
-  body { background: var(--harbor); }
-  body .app { border: none; box-shadow: 0 0 0 1px rgba(255, 255, 255, .08), 0 20px 60px rgba(0, 0, 0, .35); }
+  body { background: linear-gradient(rgba(6, 30, 42, .22), rgba(6, 30, 42, .22)), url(icons/sea.jpg) center / cover no-repeat fixed, #0d3a4e; }
+  body .app { border: none; box-shadow: 0 0 0 2px rgba(255, 255, 255, .55), 0 20px 60px rgba(4, 22, 32, .55); }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

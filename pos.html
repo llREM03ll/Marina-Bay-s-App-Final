@@ -38,6 +38,10 @@
   .help2 { padding: 12px 16px; font-size: 13px; color: var(--muted); border-bottom: 1px solid var(--line); }
   .note-in { width: 100%; height: 42px; border: 1.5px solid #c9c1b5; border-radius: 6px; padding: 0 10px; font: inherit; }
   .note-in:focus { outline: none; border-color: var(--teal); }
+  .searchbar { display: flex; gap: 8px; }
+  .searchbar input { flex: 1; width: auto; min-width: 0; }
+  .ordbtn { flex: none; height: 40px; padding: 0 14px; border: 1.5px solid var(--teal); border-radius: 10px; background: #fff; color: var(--teal); font: inherit; font-weight: 650; font-size: 14px; cursor: pointer; white-space: nowrap; }
+  .ordbtn:active { background: var(--soft); }
   .catbar { padding: 8px 16px 10px; border-bottom: 1px solid var(--line); }
   .catsel { width: 100%; height: 42px; border: 1.5px solid #c9c1b5; border-radius: 6px; padding: 0 10px; font: inherit; font-size: 15px; background: #fff; color: var(--ink); }
   .catsel:focus { outline: none; border-color: var(--teal); }
@@ -57,7 +61,7 @@
 
   <div class="pos-body">
     <div class="pos-left">
-      <div class="searchbar"><input id="q" type="search" placeholder="Search the menu" autocomplete="off"></div>
+      <div class="searchbar"><input id="q" type="search" placeholder="Search the menu" autocomplete="off"><button class="ordbtn" id="ordBtn" type="button">Orders</button></div>
       <div class="catbar" id="chips"></div>
       <main id="main"><div id="items"></div></main>
       <div class="cartbar"><button id="openCart" disabled><span id="cartCount">No items yet</span><b class="num" id="cartTotal">₱0</b></button></div>
@@ -81,6 +85,7 @@
   var cart = [];
   try { cart = JSON.parse(localStorage.getItem(CART_KEY)) || []; } catch (e) { cart = []; }
   function saveCart() { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) {} }
+  var fixing = null; // an earlier order being corrected: { id, label, disc }
   var TYPE_KEY = 'marinabays_ordertype_v1', orderType = 'dine';
   try { if (localStorage.getItem(TYPE_KEY) === 'take') orderType = 'take'; } catch (e) {}
   function setType(t) { orderType = t === 'take' ? 'take' : 'dine'; try { localStorage.setItem(TYPE_KEY, orderType); } catch (e) {} }
@@ -233,6 +238,8 @@
       '</span></div>' + (panel ? '' : '<button class="icon-btn" data-close aria-label="Close">&times;</button>') + '</div><div class="sh-body">';
     h += '<div class="otype"><div class="seg2"><button data-ot="dine" class="' + (orderType === 'dine' ? 'on' : '') + '">Dine in</button>' +
       '<button data-ot="take" class="' + (orderType === 'take' ? 'on' : '') + '">Take out</button></div></div>';
+    if (fixing) h += '<div class="help2">Correcting ' + esc(fixing.label) + '. The old order is refunded when you complete this one.' +
+      (fixing.disc ? ' Enter the discount again (' + D.pesoShort(fixing.disc) + ') if it still applies.' : '') + '</div>';
     if (!cart.length) h += '<div class="empty">The order is empty.</div>';
     cart.forEach(function (l, i) {
       var meta = [];
@@ -271,7 +278,7 @@
     }
     if (e.target.id === 'chargeBtn') { openCharge(); return; }
     if (e.target.id === 'printOrder') { printOrder(e.target); return; }
-    if (e.target.id === 'clearCart' && confirm('Clear the whole order?')) { cart = []; setType('dine'); saveCart(); paintBar(); }
+    if (e.target.id === 'clearCart' && confirm('Clear the whole order?')) { cart = []; fixing = null; setType('dine'); saveCart(); paintBar(); }
   });
   /* ---------- print ---------- */
   function num(n) { return Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
@@ -299,7 +306,7 @@
     if (e.target.id === 'chargeBtn') { openCharge(); return; }
     if (e.target.id === 'printOrder') { printOrder(e.target); return; }
     if (e.target.id === 'clearCart') {
-      if (confirm('Clear the whole order?')) { cart = []; setType('dine'); saveCart(); paintBar(); closeSheet(); }
+      if (confirm('Clear the whole order?')) { cart = []; fixing = null; setType('dine'); saveCart(); paintBar(); closeSheet(); }
       return;
     }
     if (e.target.id === 'selAdd' && mode === 'item') {
@@ -372,8 +379,10 @@
     var n = payNums();
     if (pay.method === 'cash' && n.tend < n.net) { D.toast('Cash received is less than the total'); return; }
     var sale = S.makeSale(cart, { disc: n.d, method: pay.method, tend: n.tend, type: orderType });
+    if (fixing) sale.fix = fixing.id;
     if (!S.addSale(sale)) { D.toast('Could not save the sale. Storage may be full.'); return; }
-    lastSale = sale; cart = []; setType('dine'); saveCart(); paintBar();
+    if (fixing) { S.refund(fixing.id); fixing = null; }
+    lastSale = sale; cart = []; setType('dine'); saveCart(); paintBar(); paintOrdBtn();
     mode = 'done'; renderDone();
   }
   function renderDone() {
@@ -420,8 +429,84 @@
     else if (e.target.id === 'payTend') { pay.tend = e.target.value; refreshPay(); }
   });
 
-  paintChips(); paintItems(); paintBar();
-  window.addEventListener('pageshow', function () { paintChips(); paintItems(); });
+  /* ---------- order history ---------- */
+  var hDate = '', hId = null;
+  function todayStr() { return S.phDate(Date.now()); }
+  function dayShift(d, n) { var x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); }
+  function dayList(d) { return S.sales().filter(function (s) { return S.phDate(s.t) === d; }).slice().reverse(); }
+  function saleLabel(s) { return s.rno || ('Order ' + s.n); }
+  function saleById(id) { return S.sales().filter(function (s) { return s.id === id; })[0]; }
+  function paintOrdBtn() { var n = dayList(todayStr()).length; $('ordBtn').textContent = n ? 'Orders (' + n + ')' : 'Orders'; }
+  function linesText(s) {
+    var names = s.lines.map(function (l) { return (l.qty > 1 ? l.qty + ' x ' : '') + l.name; });
+    return names.length > 3 ? names.slice(0, 3).join(', ') + ' +' + (names.length - 3) + ' more' : names.join(', ');
+  }
+  function renderHist() {
+    mode = 'hist'; hId = null;
+    var list = dayList(hDate), isToday = hDate === todayStr(), net = 0;
+    list.forEach(function (s) { if (!s.ref) net += s.net; });
+    var label = isToday ? 'Today' : new Date(hDate + 'T00:00:00Z').toLocaleDateString('en-PH', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' });
+    var h = '<div class="sh-head"><div class="t"><b>Orders</b><span>' + esc(label) + ' · ' + list.length + (list.length === 1 ? ' order' : ' orders') + ' · ' + D.pesoShort(net) + '</span></div>' +
+      '<button class="icon-btn" data-hd="-1" aria-label="Earlier day">&#8249;</button><button class="icon-btn" data-hd="1" aria-label="Later day"' + (isToday ? ' disabled' : '') + '>&#8250;</button>' +
+      '<button class="icon-btn" data-close aria-label="Close">&times;</button></div><div class="sh-body">';
+    h += list.map(function (s) {
+      return '<button class="prow" data-oid="' + esc(s.id) + '"><div class="what"><b>' + esc(saleLabel(s)) + ' · ' + esc(S.fmtTime(s.t)) +
+        (s.ref ? '<span class="badge warn">Refunded</span>' : '') + '</b><span class="s">' + esc(S.typeText(s.type)) + ' · ' + esc(linesText(s)) + '</span></div><div class="r num">' + D.pesoShort(s.net) + '</div></button>';
+    }).join('') || '<div class="empty">No orders on this day.</div>';
+    h += '</div><div class="sh-foot"><button class="primary" data-close>Close</button></div>';
+    $('sheet').innerHTML = h;
+  }
+  function renderOrd(id) {
+    var s = saleById(id); if (!s) { renderHist(); return; }
+    mode = 'ord'; hId = id;
+    var h = '<div class="sh-head"><button class="icon-btn" data-hback aria-label="Back">&#8249;</button><div class="t"><b>' + esc(saleLabel(s)) + '</b><span>' + esc(S.fmtDT(s.t)) + ' · ' + esc(S.typeText(s.type)) +
+      (s.ref ? ' · Refunded' : '') + '</span></div><button class="icon-btn" data-close aria-label="Close">&times;</button></div><div class="sh-body">';
+    s.lines.forEach(function (l) {
+      var unit = l.price; (l.addons || []).forEach(function (a) { unit += a.p; });
+      var meta = []; if (l.opt) meta.push(l.opt); (l.addons || []).forEach(function (a) { meta.push('+ ' + a.n); });
+      h += '<div class="line"><div class="l1"><b>' + l.qty + ' x ' + esc(l.name) + '</b><span class="num">' + D.pesoShort(unit * l.qty) + '</span></div>' +
+        (meta.length ? '<div class="meta">' + esc(meta.join(', ')) + '</div>' : '') + (l.note ? '<div class="meta"><i>' + esc(l.note) + '</i></div>' : '') + '</div>';
+    });
+    if (s.disc) h += '<div class="line"><div class="l1"><span>Discount</span><span class="num">-' + D.pesoShort(s.disc) + '</span></div></div>';
+    h += '<div class="totalrow"><span>Total</span><span class="num">' + money(s.net) + '</span></div>' +
+      '<div class="help2">' + (s.pay === 'cash' ? 'Cash ' + money(s.tend) + ' · Change ' + money(s.change) : 'E-wallet') + (s.emp ? ' · ' + esc(s.emp) : '') + (s.fix ? ' · Correction of an earlier order' : '') + '</div></div>';
+    h += '<div class="sh-foot">' + (s.ref ? '' : '<button class="text-btn danger" id="ordRefund">Refund</button><button class="secondary" id="ordFix">Correct</button>') +
+      '<button class="primary" id="ordPrint">Print receipt</button></div>';
+    $('sheet').innerHTML = h;
+  }
+  function correctOrder(s) {
+    if (cart.length && !confirm('Replace the order on the screen with this one?')) return;
+    var items = D.getMenu().items;
+    cart = s.lines.map(function (l, i) {
+      var it = items.filter(function (x) { return x.name === l.name; })[0];
+      return { name: l.name, opt: l.opt || '', price: l.price, addons: (l.addons || []).map(function (a) { return { n: a.n, p: a.p }; }), note: l.note || '', qty: l.qty,
+               cat: it ? it.cat : undefined, k: 'fix|' + i + '|' + Date.now() };
+    });
+    setType(s.type); fixing = { id: s.id, label: saleLabel(s), disc: s.disc || 0 };
+    saveCart(); closeSheet(); paintBar();
+    D.toast('Order loaded. Change it, then charge.');
+    if (!WIDE.matches) { mode = 'cart'; renderCart(); openSheet(); }
+  }
+  $('ordBtn').onclick = function () { hDate = todayStr(); renderHist(); openSheet(); };
+  $('sheet').addEventListener('click', async function (e) {
+    if (mode !== 'hist' && mode !== 'ord') return;
+    var t = e.target, b = t.closest('button[data-hd]');
+    if (b) { if (!b.disabled) { hDate = dayShift(hDate, +b.getAttribute('data-hd')); renderHist(); } return; }
+    b = t.closest('button[data-oid]'); if (b) { renderOrd(b.getAttribute('data-oid')); return; }
+    if (t.closest('[data-hback]')) { renderHist(); return; }
+    var s = hId ? saleById(hId) : null; if (!s) return;
+    if (t.id === 'ordRefund') {
+      if (confirm('Refund ' + saleLabel(s) + ' for ' + money(s.net) + '? This cannot be undone.')) { S.refund(s.id); paintOrdBtn(); renderOrd(s.id); D.toast('Order refunded'); }
+    } else if (t.id === 'ordFix') { correctOrder(s); }
+    else if (t.id === 'ordPrint') {
+      var old = t.textContent; t.disabled = true; t.textContent = 'Printing...';
+      try { var m = await MBPrinter.print('pos', function (p) { S.saleReceipt(p, s); }); if (m) D.toast(m); }
+      finally { t.disabled = false; t.textContent = old; }
+    }
+  });
+
+  paintChips(); paintItems(); paintBar(); paintOrdBtn();
+  window.addEventListener('pageshow', function () { paintChips(); paintItems(); paintOrdBtn(); });
 
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     navigator.serviceWorker.register('sw.js').catch(function () {});
